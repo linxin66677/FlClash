@@ -47,10 +47,10 @@ void main() {
       expect(globalState.ua, contains('FlClash/v1.2.3'));
     });
 
-    test('prefers the configured global user agent', () {
+    test('ignores a restored custom global user agent', () {
       setGlobalUa('custom-agent/1.0');
 
-      expect(globalState.ua, 'custom-agent/1.0');
+      expect(globalState.ua, _packageInfo.ua);
     });
 
     test('treats a blank configured user agent as unset', () {
