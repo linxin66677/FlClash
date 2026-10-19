@@ -75,6 +75,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - run: flutter pub get
+      - name: Select the release Xcode
+        if: matrix.platform == 'macos'
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.2.app
+          xcodebuild -version
       - name: Build official package formats
         env:
           ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
