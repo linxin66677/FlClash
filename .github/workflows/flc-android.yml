@@ -1,0 +1,47 @@
+name: Flc Android packages
+on:
+  push:
+    branches: [codex/0.8.98-flc]
+    paths: [.github/workflows/flc-android.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f86af0d540ae421288e4cc40efc01147b32f7309
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.4'
+          cache-dependency-path: core/go.sum
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r28c
+          add-to-path: true
+          link-to-sdk: true
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          cache: true
+      - run: flutter pub get
+      - name: Build three Android architectures for local signing
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+          FLCLASH_UNSIGNED_RELEASE: 'true'
+        run: dart setup.dart android --env stable -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlClash-0.8.98-android-all-UNSIGNED
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
