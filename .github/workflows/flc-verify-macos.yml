@@ -1,0 +1,93 @@
+name: Flc macOS build and verification
+on:
+  push:
+    branches: [codex/0.8.98-flc]
+    paths: [.github/workflows/flc-verify-macos.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  intel:
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f86af0d540ae421288e4cc40efc01147b32f7309
+          submodules: recursive
+      - name: Select the repository release Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.2.app
+          xcodebuild -version
+          xcrun --show-sdk-version
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.4'
+          cache-dependency-path: core/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          cache: true
+      - run: flutter pub get
+      - run: dart setup.dart macos --env stable -v
+      - name: Verify Intel DMG and app signature
+        run: |
+          set -eo pipefail
+          dmg=$(find dist -name '*.dmg' -print -quit)
+          test -n "$dmg"
+          hdiutil verify "$dmg"
+          mount="$RUNNER_TEMP/flc-verify-mount"
+          mkdir -p "$mount"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$dmg"
+          trap 'hdiutil detach "$mount"' EXIT
+          app=$(find "$mount" -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")
+          file "$app/Contents/MacOS/$executable" | tee dist/macos-amd64-verification.txt
+          file "$app/Contents/MacOS/$executable" | grep x86_64
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" | grep '^0.8.98$'
+          codesign -dv --verbose=2 "$app" 2>&1 | tee -a dist/macos-amd64-verification.txt
+          echo 'DMG integrity, application signature, architecture and version verified.' >> dist/macos-amd64-verification.txt
+      - name: Source provenance
+        run: git rev-parse HEAD > dist/SOURCE_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlClash-0.8.98-macos-amd64
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+  verify-arm:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: FlClash-0.8.98-macos-arm64
+          run-id: 39250463286
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: artifact/
+      - name: Verify Apple Silicon DMG and app signature
+        run: |
+          set -eo pipefail
+          dmg=$(find artifact -name '*.dmg' -print -quit)
+          test -n "$dmg"
+          hdiutil verify "$dmg"
+          mount="$RUNNER_TEMP/flc-verify-mount"
+          mkdir -p "$mount"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$dmg"
+          trap 'hdiutil detach "$mount"' EXIT
+          app=$(find "$mount" -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")
+          file "$app/Contents/MacOS/$executable" | tee macos-arm64-verification.txt
+          file "$app/Contents/MacOS/$executable" | grep arm64
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" | grep '^0.8.98$'
+          codesign -dv --verbose=2 "$app" 2>&1 | tee -a macos-arm64-verification.txt
+          echo 'DMG integrity, application signature, architecture and version verified.' >> macos-arm64-verification.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-verification
+          path: macos-arm64-verification.txt
