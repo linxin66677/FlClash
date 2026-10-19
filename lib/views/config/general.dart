@@ -8,7 +8,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'general/port_dialog.dart';
-part 'general/ua_dialog.dart';
 
 class LogLevelItem extends ConsumerWidget {
   const LogLevelItem({super.key});
@@ -24,48 +23,6 @@ class LogLevelItem extends ConsumerWidget {
       onChanged: (ref, value) => ref
           .read(patchClashConfigProvider.notifier)
           .update((state) => state.copyWith(logLevel: value)),
-    );
-  }
-}
-
-class UaItem extends ConsumerWidget {
-  const UaItem({super.key});
-
-  Future<void> _handleShowUaDialog(WidgetRef ref) async {
-    final result = await dialogs.showCommonDialog<_UaDialogResult>(
-      child: _UaDialog(
-        value: ref.read(patchClashConfigProvider).globalUa,
-        customValue: ref.read(appSettingProvider).customUserAgent,
-      ),
-    );
-    if (result == null) {
-      return;
-    }
-    final userAgent = result.value.trim();
-    if (result.isCustom) {
-      ref
-          .read(appSettingProvider.notifier)
-          .update((state) => state.copyWith(customUserAgent: userAgent));
-    }
-    ref
-        .read(patchClashConfigProvider.notifier)
-        .update(
-          (state) =>
-              state.copyWith(globalUa: userAgent.isEmpty ? null : userAgent),
-        );
-  }
-
-  @override
-  Widget build(BuildContext context, ref) {
-    final appLocalizations = context.appLocalizations;
-    final globalUa = ref.watch(
-      patchClashConfigProvider.select((state) => state.globalUa),
-    );
-    return ListItem(
-      leading: const Icon(Icons.computer_outlined),
-      title: Text(appLocalizations.userAgent),
-      subtitle: Text(globalUa ?? appLocalizations.defaultText),
-      onTap: () => _handleShowUaDialog(ref),
     );
   }
 }
@@ -340,7 +297,6 @@ class GeneralListView extends ConsumerWidget {
         title: appLocalizations.other,
         items: [
           const LogLevelItem(),
-          const UaItem(),
           const TestUrlItem(),
           if (system.isDesktop) const KeepAliveIntervalItem(),
           const HostsItem(),

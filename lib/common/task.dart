@@ -211,7 +211,7 @@ Future<({String yaml, String md5})> _makeRealProfileTask(
   confineProviders('rule-providers', rulesProviderDirectoryName);
   rawConfig['profile']['store-selected'] = false;
   rawConfig['geox-url'] = realPatchConfig.geoXUrl.raw;
-  rawConfig['global-ua'] = realPatchConfig.globalUa ?? defaultUA;
+  rawConfig['global-ua'] = defaultUA;
   if (rawConfig['hosts'] == null) {
     rawConfig['hosts'] = {};
   }

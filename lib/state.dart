@@ -6,7 +6,6 @@ import 'models/models.dart';
 
 import 'package:fl_clash/common/theme.dart';
 import 'package:fl_clash/providers/app.dart';
-import 'package:fl_clash/providers/config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,9 +42,7 @@ class GlobalState {
     return _instance!;
   }
 
-  String get ua => container
-      .read(patchClashConfigProvider.select((state) => state.globalUa))
-      .takeFirstValid([packageInfo.ua]);
+  String get ua => packageInfo.ua;
 
   Future<T?> loadingRun<T>(
     FutureOr<T> Function() futureFunction, {

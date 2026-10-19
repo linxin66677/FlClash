@@ -4,8 +4,13 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
+    id("com.google.gms.google-services") apply false
+    id("com.google.firebase.crashlytics") apply false
+}
+
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 val localProperties = Properties().apply {
@@ -70,7 +75,7 @@ android {
             isShrinkResources = true
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
-            } else {
+            } else if (System.getenv("FLCLASH_UNSIGNED_RELEASE") != "true") {
                 signingConfig = signingConfigs.getByName("debug")
                 applicationIdSuffix = ".dev"
             }

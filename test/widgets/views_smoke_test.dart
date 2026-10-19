@@ -1,3 +1,5 @@
+import 'package:fl_clash/common/package.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/app.dart';
@@ -148,7 +150,9 @@ void main() {
     });
   }
 
-  testWidgets('user agent dialog applies a preset', (tester) async {
+  testWidgets('general settings hide user agent and use the default', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1000, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -163,27 +167,31 @@ void main() {
         .read(viewSizeProvider.notifier)
         .update((_) => const Size(1000, 800));
 
+    container.listen(
+      patchClashConfigProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    container
+        .read(patchClashConfigProvider.notifier)
+        .update((state) => state.copyWith(globalUa: 'custom-agent'));
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: TestApp(
-          child: Scaffold(body: ListView(children: const [UaItem()])),
-        ),
+        child: const TestApp(child: Scaffold(body: GeneralListView())),
       ),
     );
     await tester.pump();
 
-    await tester.tap(find.text('User-Agent'));
-    await tester.pumpAndSettle();
-    expect(find.text('clash-verge/v2.4.2'), findsOneWidget);
-
-    await tester.tap(find.text('clash-verge/v2.4.2'));
-    await tester.pumpAndSettle();
-
-    expect(
-      container.read(patchClashConfigProvider).globalUa,
-      'clash-verge/v2.4.2',
+    expect(find.text('User-Agent'), findsNothing);
+    globalState.packageInfo = PackageInfo(
+      appName: 'Flc',
+      packageName: 'com.follow.clash',
+      version: '0.8.98',
+      buildNumber: '2026091401',
     );
+    expect(globalState.ua, globalState.packageInfo.ua);
+    await tester.pumpAndSettle();
     expect(tester.takeException(), null);
   });
 
