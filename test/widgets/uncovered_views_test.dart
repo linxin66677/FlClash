@@ -142,7 +142,7 @@ void main() {
     expect(tester.takeException(), null);
   });
 
-  testWidgets('about view renders version and link sections', (tester) async {
+  testWidgets('about view hides link sections', (tester) async {
     final container = _containerFor(tester);
 
     await tester.pumpWidget(
@@ -154,7 +154,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(AboutView), findsOneWidget);
-    expect(find.text('Telegram'), findsOneWidget);
+    expect(find.text('Telegram'), findsNothing);
     expect(tester.takeException(), null);
 
     final scrollables = find.byType(Scrollable);
